@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Firebase and GitHub integration project",
   "scripts": {
-    "deploy": "firebase deploy"
+    "deploy": "firebase deploy --project senjin-firebase-github",
+    "deploy:hosting": "firebase deploy --only hosting --project senjin-firebase-github"
   },
   "author": "senjinshuji",
   "license": "ISC",
