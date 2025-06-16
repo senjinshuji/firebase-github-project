@@ -5,10 +5,27 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "SETUP_INSTRUCTIONS.md",
-      "README.md",
+      "**/*.md",
+      "**/*.py",
+      "**/*.txt",
       "package.json",
-      "package-lock.json"
+      "package-lock.json",
+      "src/**",
+      "venv/**",
+      "logs/**",
+      "data/**",
+      "*.sh",
+      "*.js"
+    ],
+    "rewrites": [
+      {
+        "source": "/streamlit_app",
+        "function": "streamlitApp"
+      },
+      {
+        "source": "/streamlit_simple_app", 
+        "function": "streamlitSimpleApp"
+      }
     ]
   }
 }
