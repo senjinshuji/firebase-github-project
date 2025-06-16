@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データインポート - Rank Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+        h1 {
+            color: #1e3a8a;
+            margin-bottom: 2rem;
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        pre {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .success {
+            background: #dcfce7;
+            color: #22c55e;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 データインポート</h1>
+        
+        <p>既存のdata.jsonファイルからデータをインポートします。</p>
+        
+        <button class="button" onclick="importData()">データをインポート</button>
+        <button class="button" onclick="clearData()" style="background: #ef4444;">データをクリア</button>
+        
+        <div id="result"></div>
+        
+        <h2>現在のデータ</h2>
+        <pre id="currentData">読み込み中...</pre>
+        
+        <p><a href="/app.html">← アプリに戻る</a></p>
+    </div>
+    
+    <script>
+        // 既存のdata.jsonファイルの内容（実際のデータ）
+        const sampleData = {
+            "products": [
+                {
+                    "sku": "FP001",
+                    "name": "フィットネスプロテイン チョコレート味 1kg",
+                    "amazon_url": "https://www.amazon.co.jp/dp/B08XYZ1234",
+                    "rakuten_url": "https://item.rakuten.co.jp/fitstore/protein-choco-1kg/",
+                    "keywords": ["プロテイン チョコレート", "ホエイプロテイン 1kg", "フィットネスプロテイン"]
+                },
+                {
+                    "sku": "YM002",
+                    "name": "ヨガマット 6mm 滑り止め付き",
+                    "amazon_url": "https://www.amazon.co.jp/dp/B07ABC5678",
+                    "rakuten_url": "https://item.rakuten.co.jp/yogashop/mat-6mm-anti-slip/",
+                    "keywords": ["ヨガマット 6mm", "トレーニングマット", "エクササイズマット 滑り止め"]
+                },
+                {
+                    "sku": "RB003",
+                    "name": "レジスタンスバンド 5本セット",
+                    "amazon_url": "https://www.amazon.co.jp/dp/B09DEF9012",
+                    "rakuten_url": "",
+                    "keywords": ["レジスタンスバンド", "トレーニングバンド セット", "筋トレ ゴムバンド"]
+                }
+            ]
+        };
+        
+        function importData() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // 既存データをクリア
+                localStorage.removeItem('rankTrackerProducts');
+                localStorage.removeItem('rankTrackerRankings');
+                
+                // 新しいデータをインポート
+                const products = [];
+                const rankings = [];
+                
+                sampleData.products.forEach(item => {
+                    const product = {
+                        id: Date.now().toString() + Math.random(),
+                        name: item.name || item.sku,
+                        amazonUrl: item.amazon_url || '',
+                        rakutenUrl: item.rakuten_url || '',
+                        keywords: item.keywords || [],
+                        createdAt: new Date().toISOString()
+                    };
+                    products.push(product);
+                    
+                    // サンプル順位データも生成
+                    item.keywords.forEach(keyword => {
+                        for (let i = 0; i < 10; i++) {
+                            const date = new Date();
+                            date.setDate(date.getDate() - i * 3);
+                            
+                            rankings.push({
+                                id: Date.now().toString() + Math.random(),
+                                productId: product.id,
+                                productName: product.name,
+                                keyword: keyword,
+                                amazonRank: Math.floor(Math.random() * 30) + 5,
+                                rakutenRank: Math.floor(Math.random() * 35) + 10,
+                                date: date.toISOString()
+                            });
+                        }
+                    });
+                });
+                
+                // ローカルストレージに保存
+                localStorage.setItem('rankTrackerProducts', JSON.stringify(products));
+                localStorage.setItem('rankTrackerRankings', JSON.stringify(rankings));
+                
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ インポート成功！<br>
+                        - ${products.length} 件の商品<br>
+                        - ${rankings.length} 件の順位データ
+                    </div>
+                `;
+                
+                showCurrentData();
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: red;">エラー: ${error.message}</div>`;
+            }
+        }
+        
+        function clearData() {
+            if (confirm('全てのデータを削除しますか？')) {
+                localStorage.removeItem('rankTrackerProducts');
+                localStorage.removeItem('rankTrackerRankings');
+                document.getElementById('result').innerHTML = '<div class="success">データをクリアしました</div>';
+                showCurrentData();
+            }
+        }
+        
+        function showCurrentData() {
+            const products = JSON.parse(localStorage.getItem('rankTrackerProducts')) || [];
+            const rankings = JSON.parse(localStorage.getItem('rankTrackerRankings')) || [];
+            
+            document.getElementById('currentData').textContent = JSON.stringify({
+                productsCount: products.length,
+                rankingsCount: rankings.length,
+                products: products
+            }, null, 2);
+        }
+        
+        // 初期表示
+        showCurrentData();
+    </script>
+</body>
+</html>

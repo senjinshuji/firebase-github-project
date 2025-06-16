@@ -641,8 +641,38 @@
             
             // 実際のAPIコールの代わりにシミュレート
             setTimeout(() => {
-                const amazonRank = Math.floor(Math.random() * 50) + 1;
-                const rakutenRank = Math.floor(Math.random() * 50) + 1;
+                // より現実的なシミュレーション
+                let amazonRank = 999; // デフォルトは圏外
+                let rakutenRank = 999;
+                
+                // 商品URLがあるかチェック
+                if (product.amazonUrl) {
+                    // ASINを抽出（実際の商品）
+                    const asinMatch = product.amazonUrl.match(/\/dp\/([A-Z0-9]{10})/);
+                    if (asinMatch) {
+                        // キーワードに基づいて順位をシミュレート
+                        const keywordLower = keyword.toLowerCase();
+                        if (keywordLower.includes(product.name.toLowerCase()) || 
+                            product.name.toLowerCase().includes(keywordLower)) {
+                            amazonRank = Math.floor(Math.random() * 10) + 1; // 1-10位
+                        } else {
+                            amazonRank = Math.floor(Math.random() * 40) + 10; // 10-50位
+                        }
+                    }
+                }
+                
+                if (product.rakutenUrl) {
+                    // 楽天商品IDをチェック
+                    if (product.rakutenUrl.includes('item.rakuten.co.jp')) {
+                        const keywordLower = keyword.toLowerCase();
+                        if (keywordLower.includes(product.name.toLowerCase()) || 
+                            product.name.toLowerCase().includes(keywordLower)) {
+                            rakutenRank = Math.floor(Math.random() * 15) + 1; // 1-15位
+                        } else {
+                            rakutenRank = Math.floor(Math.random() * 35) + 15; // 15-50位
+                        }
+                    }
+                }
                 
                 // 結果を保存
                 const ranking = {
@@ -664,8 +694,25 @@
                         <h3>検索結果</h3>
                         <p><strong>商品:</strong> ${product.name}</p>
                         <p><strong>キーワード:</strong> ${keyword}</p>
-                        <p><strong>Amazon順位:</strong> ${amazonRank}位</p>
-                        <p><strong>楽天順位:</strong> ${rakutenRank}位</p>
+                        <div style="display: flex; gap: 2rem; margin: 1rem 0;">
+                            <div style="flex: 1;">
+                                <h4 style="color: #ff9900;">Amazon</h4>
+                                <p style="font-size: 2rem; font-weight: bold; color: ${amazonRank <= 10 ? '#22c55e' : amazonRank <= 30 ? '#f59e0b' : '#ef4444'};">
+                                    ${amazonRank === 999 ? '圏外' : amazonRank + '位'}
+                                </p>
+                                ${product.amazonUrl ? `<a href="${product.amazonUrl}" target="_blank" style="color: #3b82f6;">商品ページを開く</a>` : '<p style="color: #6b7280;">URL未登録</p>'}
+                            </div>
+                            <div style="flex: 1;">
+                                <h4 style="color: #bf0000;">楽天市場</h4>
+                                <p style="font-size: 2rem; font-weight: bold; color: ${rakutenRank <= 10 ? '#22c55e' : rakutenRank <= 30 ? '#f59e0b' : '#ef4444'};">
+                                    ${rakutenRank === 999 ? '圏外' : rakutenRank + '位'}
+                                </p>
+                                ${product.rakutenUrl ? `<a href="${product.rakutenUrl}" target="_blank" style="color: #3b82f6;">商品ページを開く</a>` : '<p style="color: #6b7280;">URL未登録</p>'}
+                            </div>
+                        </div>
+                        <p style="margin-top: 1rem; padding: 0.75rem; background: #fef3c7; border-radius: 6px;">
+                            <strong>⚠️ 注意:</strong> これはシミュレーション結果です。実際の検索順位を取得するには、Firebase Functionsまたはサーバーサイドの実装が必要です。
+                        </p>
                         <p><strong>検索日時:</strong> ${new Date().toLocaleString('ja-JP')}</p>
                     </div>
                 `;
