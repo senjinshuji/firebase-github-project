@@ -1,0 +1,10 @@
+{
+  "name": "firebase-github-project",
+  "version": "1.0.0",
+  "description": "Firebase and GitHub integration project",
+  "scripts": {
+    "deploy": "firebase deploy"
+  },
+  "author": "senjinshuji",
+  "license": "ISC"
+}
