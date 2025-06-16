@@ -3,3 +3,4 @@ node_modules/
 .firebaserc
 firebase-debug.log
 .DS_Store
+.env
