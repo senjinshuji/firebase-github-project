@@ -17,15 +17,6 @@
       "*.sh",
       "*.js"
     ],
-    "rewrites": [
-      {
-        "source": "/streamlit_app",
-        "function": "streamlitApp"
-      },
-      {
-        "source": "/streamlit_simple_app", 
-        "function": "streamlitSimpleApp"
-      }
-    ]
+    "rewrites": []
   }
 }

@@ -97,8 +97,10 @@
             <h2>アプリケーション</h2>
             <p>以下のリンクからアプリケーションにアクセスできます：</p>
             
-            <a href="/streamlit_app" class="button">メインアプリ</a>
-            <a href="/streamlit_simple_app" class="button secondary">シンプル版</a>
+            <p style="background: #fef3c7; padding: 1rem; border-radius: 4px; border-left: 4px solid #f59e0b;">
+                ⚠️ StreamlitアプリはFirebase Hostingでは直接実行できません。<br>
+                ローカル環境で実行するか、Streamlit CloudやHerokuなどの専用プラットフォームをご利用ください。
+            </p>
             
             <h3 style="margin-top: 2rem;">ローカル実行</h3>
             <pre style="background: #f1f5f9; padding: 1rem; border-radius: 4px; overflow-x: auto;">
@@ -124,7 +126,8 @@ python run_local_search.py</pre>
         <div class="card" style="text-align: center; background: #f8f9fa;">
             <p>デプロイ日時: <span id="deploy-time"></span></p>
             <p style="margin-top: 1rem;">
-                <a href="https://github.com/senjinshuji/firebase-github-project" style="color: #1e3a8a;">GitHub Repository</a>
+                <a href="/docs.html" style="color: #1e3a8a; margin-right: 2rem;">📚 ドキュメント</a>
+                <a href="https://github.com/senjinshuji/firebase-github-project" style="color: #1e3a8a;">💻 GitHub Repository</a>
             </p>
         </div>
     </div>
