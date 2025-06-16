@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rank Tracker - 商品順位管理</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #1e3a8a;
+            border-bottom-color: #1e3a8a;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .product-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+        
+        .product-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .product-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .product-links {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        .link-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .amazon-link {
+            background: #ff9900;
+        }
+        
+        .rakuten-link {
+            background: #bf0000;
+        }
+        
+        .keywords-list {
+            margin-top: 1rem;
+        }
+        
+        .keyword-chip {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #e5e7eb;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            margin: 0.25rem;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 2rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+        
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏆 Rank Tracker</h1>
+        <p>Amazon・楽天市場の商品検索順位を追跡</p>
+    </div>
+    
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">ダッシュボード</button>
+            <button class="tab" onclick="switchTab('products')">商品管理</button>
+            <button class="tab" onclick="switchTab('search')">順位検索</button>
+            <button class="tab" onclick="switchTab('analytics')">分析</button>
+        </div>
+        
+        <!-- ダッシュボード -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">登録商品数</div>
+                    <div class="stat-value" id="totalProducts">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">追跡キーワード数</div>
+                    <div class="stat-value" id="totalKeywords">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">本日の検索実行</div>
+                    <div class="stat-value" id="todaySearches">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">平均順位（Amazon）</div>
+                    <div class="stat-value" id="avgRankAmazon">-</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>最近の順位変動</h2>
+                <div class="chart-container">
+                    <canvas id="recentChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 商品管理 -->
+        <div id="products" class="tab-content">
+            <div class="card">
+                <h2>商品を追加</h2>
+                <form id="addProductForm">
+                    <div class="form-group">
+                        <label>商品名（SKU）</label>
+                        <input type="text" id="productName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Amazon URL</label>
+                        <input type="url" id="amazonUrl" placeholder="https://www.amazon.co.jp/dp/...">
+                    </div>
+                    <div class="form-group">
+                        <label>楽天 URL</label>
+                        <input type="url" id="rakutenUrl" placeholder="https://item.rakuten.co.jp/...">
+                    </div>
+                    <div class="form-group">
+                        <label>検索キーワード（カンマ区切り）</label>
+                        <input type="text" id="keywords" placeholder="キーワード1, キーワード2, ...">
+                    </div>
+                    <button type="submit" class="btn btn-primary">商品を追加</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>登録商品一覧</h2>
+                <div id="productsList" class="products-grid">
+                    <div class="loading">商品を読み込み中</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 順位検索 -->
+        <div id="search" class="tab-content">
+            <div class="card">
+                <h2>順位を検索</h2>
+                <form id="searchForm">
+                    <div class="form-group">
+                        <label>商品を選択</label>
+                        <select id="searchProduct" required>
+                            <option value="">商品を選択してください</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>キーワード</label>
+                        <select id="searchKeyword" required>
+                            <option value="">キーワードを選択してください</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">検索実行</button>
+                </form>
+                
+                <div id="searchResults" style="margin-top: 2rem;"></div>
+            </div>
+        </div>
+        
+        <!-- 分析 -->
+        <div id="analytics" class="tab-content">
+            <div class="card">
+                <h2>順位推移グラフ</h2>
+                <form id="analyticsForm">
+                    <div class="form-group">
+                        <label>商品を選択</label>
+                        <select id="analyticsProduct" required>
+                            <option value="">商品を選択してください</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>期間</label>
+                        <select id="analyticsPeriod">
+                            <option value="7">過去7日間</option>
+                            <option value="30" selected>過去30日間</option>
+                            <option value="90">過去90日間</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">グラフを表示</button>
+                </form>
+                
+                <div class="chart-container" style="margin-top: 2rem;">
+                    <canvas id="analyticsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- モーダル -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+    
+    <script>
+        // データストレージ（実際はFirebaseに接続）
+        let products = JSON.parse(localStorage.getItem('rankTrackerProducts')) || [];
+        let rankings = JSON.parse(localStorage.getItem('rankTrackerRankings')) || [];
+        
+        // タブ切り替え
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            // タブに応じてデータを更新
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'products') updateProductsList();
+            if (tabName === 'search') updateSearchForm();
+            if (tabName === 'analytics') updateAnalyticsForm();
+        }
+        
+        // ダッシュボード更新
+        function updateDashboard() {
+            document.getElementById('totalProducts').textContent = products.length;
+            
+            let totalKeywords = 0;
+            products.forEach(p => {
+                totalKeywords += p.keywords.length;
+            });
+            document.getElementById('totalKeywords').textContent = totalKeywords;
+            
+            // 今日の検索数
+            const today = new Date().toDateString();
+            const todaySearches = rankings.filter(r => 
+                new Date(r.date).toDateString() === today
+            ).length;
+            document.getElementById('todaySearches').textContent = todaySearches;
+            
+            // 平均順位
+            const recentAmazonRanks = rankings
+                .filter(r => r.amazonRank && r.amazonRank !== 999)
+                .slice(-10)
+                .map(r => r.amazonRank);
+            
+            if (recentAmazonRanks.length > 0) {
+                const avgRank = Math.round(
+                    recentAmazonRanks.reduce((a, b) => a + b, 0) / recentAmazonRanks.length
+                );
+                document.getElementById('avgRankAmazon').textContent = avgRank;
+            }
+            
+            // グラフ更新
+            updateRecentChart();
+        }
+        
+        // 最近の順位変動グラフ
+        function updateRecentChart() {
+            const ctx = document.getElementById('recentChart').getContext('2d');
+            
+            // 過去7日間のデータを集計
+            const days = 7;
+            const labels = [];
+            const amazonData = [];
+            const rakutenData = [];
+            
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }));
+                
+                // その日の平均順位を計算
+                const dayRankings = rankings.filter(r => 
+                    new Date(r.date).toDateString() === date.toDateString()
+                );
+                
+                const amazonRanks = dayRankings
+                    .filter(r => r.amazonRank && r.amazonRank !== 999)
+                    .map(r => r.amazonRank);
+                const rakutenRanks = dayRankings
+                    .filter(r => r.rakutenRank && r.rakutenRank !== 999)
+                    .map(r => r.rakutenRank);
+                
+                amazonData.push(amazonRanks.length > 0 ? 
+                    Math.round(amazonRanks.reduce((a, b) => a + b, 0) / amazonRanks.length) : null
+                );
+                rakutenData.push(rakutenRanks.length > 0 ? 
+                    Math.round(rakutenRanks.reduce((a, b) => a + b, 0) / rakutenRanks.length) : null
+                );
+            }
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Amazon平均順位',
+                        data: amazonData,
+                        borderColor: '#ff9900',
+                        backgroundColor: '#ff990020',
+                        tension: 0.4
+                    }, {
+                        label: '楽天平均順位',
+                        data: rakutenData,
+                        borderColor: '#bf0000',
+                        backgroundColor: '#bf000020',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            reverse: true,
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: '順位'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 商品リスト更新
+        function updateProductsList() {
+            const container = document.getElementById('productsList');
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6b7280;">商品が登録されていません</p>';
+                return;
+            }
+            
+            container.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <div class="product-header">
+                        <div class="product-name">${product.name}</div>
+                        <button class="btn btn-danger" onclick="deleteProduct('${product.id}')" style="padding: 0.5rem 1rem;">削除</button>
+                    </div>
+                    <div class="product-links">
+                        ${product.amazonUrl ? `<a href="${product.amazonUrl}" target="_blank" class="link-badge amazon-link">Amazon</a>` : ''}
+                        ${product.rakutenUrl ? `<a href="${product.rakutenUrl}" target="_blank" class="link-badge rakuten-link">楽天</a>` : ''}
+                    </div>
+                    <div class="keywords-list">
+                        ${product.keywords.map(kw => `<span class="keyword-chip">${kw}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 商品追加
+        document.getElementById('addProductForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const product = {
+                id: Date.now().toString(),
+                name: document.getElementById('productName').value,
+                amazonUrl: document.getElementById('amazonUrl').value,
+                rakutenUrl: document.getElementById('rakutenUrl').value,
+                keywords: document.getElementById('keywords').value
+                    .split(',')
+                    .map(k => k.trim())
+                    .filter(k => k),
+                createdAt: new Date().toISOString()
+            };
+            
+            products.push(product);
+            localStorage.setItem('rankTrackerProducts', JSON.stringify(products));
+            
+            // フォームをリセット
+            this.reset();
+            
+            // リスト更新
+            updateProductsList();
+            
+            // 成功メッセージ
+            showModal('商品を追加しました', `${product.name} を登録しました。`);
+        });
+        
+        // 商品削除
+        function deleteProduct(productId) {
+            if (confirm('この商品を削除しますか？')) {
+                products = products.filter(p => p.id !== productId);
+                localStorage.setItem('rankTrackerProducts', JSON.stringify(products));
+                updateProductsList();
+            }
+        }
+        
+        // 検索フォーム更新
+        function updateSearchForm() {
+            const productSelect = document.getElementById('searchProduct');
+            productSelect.innerHTML = '<option value="">商品を選択してください</option>' +
+                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            
+            productSelect.addEventListener('change', function() {
+                const product = products.find(p => p.id === this.value);
+                const keywordSelect = document.getElementById('searchKeyword');
+                
+                if (product) {
+                    keywordSelect.innerHTML = '<option value="">キーワードを選択してください</option>' +
+                        product.keywords.map(kw => `<option value="${kw}">${kw}</option>`).join('');
+                } else {
+                    keywordSelect.innerHTML = '<option value="">キーワードを選択してください</option>';
+                }
+            });
+        }
+        
+        // 検索実行
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const productId = document.getElementById('searchProduct').value;
+            const keyword = document.getElementById('searchKeyword').value;
+            const product = products.find(p => p.id === productId);
+            
+            if (!product) return;
+            
+            // 検索結果表示エリア
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '<div class="loading">検索中</div>';
+            
+            // 実際のAPIコールの代わりにシミュレート
+            setTimeout(() => {
+                const amazonRank = Math.floor(Math.random() * 50) + 1;
+                const rakutenRank = Math.floor(Math.random() * 50) + 1;
+                
+                // 結果を保存
+                const ranking = {
+                    id: Date.now().toString(),
+                    productId: productId,
+                    productName: product.name,
+                    keyword: keyword,
+                    amazonRank: amazonRank,
+                    rakutenRank: rakutenRank,
+                    date: new Date().toISOString()
+                };
+                
+                rankings.push(ranking);
+                localStorage.setItem('rankTrackerRankings', JSON.stringify(rankings));
+                
+                // 結果表示
+                resultsDiv.innerHTML = `
+                    <div class="card">
+                        <h3>検索結果</h3>
+                        <p><strong>商品:</strong> ${product.name}</p>
+                        <p><strong>キーワード:</strong> ${keyword}</p>
+                        <p><strong>Amazon順位:</strong> ${amazonRank}位</p>
+                        <p><strong>楽天順位:</strong> ${rakutenRank}位</p>
+                        <p><strong>検索日時:</strong> ${new Date().toLocaleString('ja-JP')}</p>
+                    </div>
+                `;
+                
+                updateDashboard();
+            }, 2000);
+        });
+        
+        // 分析フォーム更新
+        function updateAnalyticsForm() {
+            const productSelect = document.getElementById('analyticsProduct');
+            productSelect.innerHTML = '<option value="">商品を選択してください</option>' +
+                products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
+        
+        // 分析グラフ表示
+        document.getElementById('analyticsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const productId = document.getElementById('analyticsProduct').value;
+            const period = parseInt(document.getElementById('analyticsPeriod').value);
+            const product = products.find(p => p.id === productId);
+            
+            if (!product) return;
+            
+            // 期間内のデータを取得
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - period);
+            
+            const productRankings = rankings.filter(r => 
+                r.productId === productId &&
+                new Date(r.date) >= startDate &&
+                new Date(r.date) <= endDate
+            );
+            
+            // キーワード別にグループ化
+            const keywordData = {};
+            productRankings.forEach(r => {
+                if (!keywordData[r.keyword]) {
+                    keywordData[r.keyword] = {
+                        dates: [],
+                        amazonRanks: [],
+                        rakutenRanks: []
+                    };
+                }
+                
+                keywordData[r.keyword].dates.push(new Date(r.date).toLocaleDateString('ja-JP'));
+                keywordData[r.keyword].amazonRanks.push(r.amazonRank);
+                keywordData[r.keyword].rakutenRanks.push(r.rakutenRank);
+            });
+            
+            // グラフデータ作成
+            const datasets = [];
+            const colors = ['#ff9900', '#bf0000', '#3b82f6', '#10b981', '#f59e0b'];
+            let colorIndex = 0;
+            
+            Object.keys(keywordData).forEach(keyword => {
+                datasets.push({
+                    label: `${keyword} (Amazon)`,
+                    data: keywordData[keyword].amazonRanks,
+                    borderColor: colors[colorIndex % colors.length],
+                    backgroundColor: colors[colorIndex % colors.length] + '20',
+                    borderDash: [5, 5]
+                });
+                datasets.push({
+                    label: `${keyword} (楽天)`,
+                    data: keywordData[keyword].rakutenRanks,
+                    borderColor: colors[colorIndex % colors.length],
+                    backgroundColor: colors[colorIndex % colors.length] + '20'
+                });
+                colorIndex++;
+            });
+            
+            // グラフ描画
+            const ctx = document.getElementById('analyticsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Object.values(keywordData)[0]?.dates || [],
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: `${product.name} の順位推移`
+                        }
+                    },
+                    scales: {
+                        y: {
+                            reverse: true,
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: '順位'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+        
+        // モーダル表示
+        function showModal(title, content) {
+            document.getElementById('modalBody').innerHTML = `
+                <h2>${title}</h2>
+                <p>${content}</p>
+                <button class="btn btn-primary" onclick="closeModal()">OK</button>
+            `;
+            document.getElementById('modal').style.display = 'block';
+        }
+        
+        // モーダル閉じる
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+        
+        // 初期化
+        updateDashboard();
+        
+        // サンプルデータ（デモ用）
+        if (products.length === 0) {
+            const sampleProduct = {
+                id: '1',
+                name: 'サンプル商品A',
+                amazonUrl: 'https://www.amazon.co.jp/dp/B00000000',
+                rakutenUrl: 'https://item.rakuten.co.jp/sample/item',
+                keywords: ['ワイヤレスイヤホン', 'Bluetooth イヤホン', '完全ワイヤレス'],
+                createdAt: new Date().toISOString()
+            };
+            products.push(sampleProduct);
+            localStorage.setItem('rankTrackerProducts', JSON.stringify(products));
+            
+            // サンプル順位データ
+            for (let i = 0; i < 30; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                
+                sampleProduct.keywords.forEach(keyword => {
+                    rankings.push({
+                        id: Date.now().toString() + i + keyword,
+                        productId: '1',
+                        productName: sampleProduct.name,
+                        keyword: keyword,
+                        amazonRank: Math.floor(Math.random() * 30) + 10 - Math.floor(i / 3),
+                        rakutenRank: Math.floor(Math.random() * 30) + 15 - Math.floor(i / 3),
+                        date: date.toISOString()
+                    });
+                });
+            }
+            localStorage.setItem('rankTrackerRankings', JSON.stringify(rankings));
+        }
+    </script>
+</body>
+</html>
